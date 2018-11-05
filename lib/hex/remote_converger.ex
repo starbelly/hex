@@ -81,24 +81,62 @@ defmodule Hex.RemoteConverger do
     end)
   end
 
+  defp checksum_message() do
+    "The package has changed since it was locked in your project. " <>
+    "If this is not expected it may due to a security issue, " <>
+    "if it is expected you can explicitly unlock the package with " <>
+    "the following command:"
+  end
+
   defp lock_merge(old, new) do
-    Map.merge(old, new, fn _key, old_tuple, new_tuple ->
-      if lock_tuple_needs_update?(old_tuple, new_tuple) do
-        new_tuple
-      else
-        old_tuple
+    Map.merge(old, new, fn key, old_tuple, new_tuple ->
+      old_info = Hex.Utils.lock(old_tuple)
+      new_info = Hex.Utils.lock(new_tuple)
+
+      cond do
+        lock_checksum_mismatch?(old_info, new_info) ->
+          Mix.raise("""
+          Lock and registry checksum mismatch for #{key} #{old_info.version}
+
+          Lock:     #{old_info.checksum}
+          Registry: #{new_info.checksum}
+
+          #{checksum_message()}
+
+              mix deps.unlock #{key}
+          """)
+
+        lock_needs_refresh?(old_info, new_info) ->
+          new_tuple
+
+        true ->
+          old_tuple
       end
     end)
   end
 
-  defp lock_tuple_needs_update?(old_tuple, new_tuple) do
-    old_info = Hex.Utils.lock(old_tuple)
-    new_info = Hex.Utils.lock(new_tuple)
-
-    not (old_info != nil and new_info != nil and old_info.name == new_info.name and
-           old_info.version == new_info.version and old_info.checksum == new_info.checksum and
-           old_info.repo == new_info.repo)
+  defp lock_needs_refresh?(old, new) do
+    not (old != nil and new != nil and old.name == new.name and old.version == new.version and
+           old.checksum == new.checksum and old.repo == new.repo)
   end
+
+  defp lock_checksum_mismatch?(
+         %{version: version, checksum: checksum},
+         %{version: version, checksum: checksum}
+       ),
+       do: false
+
+  defp lock_checksum_mismatch?(
+         %{version: version, checksum: _},
+         %{version: version, checksum: _}
+       ),
+       do: true
+
+  defp lock_checksum_mismatch?(
+         %{version: _, checksum: _},
+         %{version: _, checksum: _}
+       ),
+       do: false
 
   defp resolver_version_failed(message) do
     Hex.Shell.info("\n" <> message)
