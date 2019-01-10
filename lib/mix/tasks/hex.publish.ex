@@ -357,15 +357,7 @@ defmodule Mix.Tasks.Hex.Publish do
     meta = build.meta
     # TODO: TR - validate licenses against SPDX lists.
     # if license is not in SPDX list, raise an error??
-
     licenses = Map.get(build.package, :licenses, [])
-
-    if licenses do
-      Hex.Shell.info("")
-      Hex.Shell.error("Publishing failed")
-      Hex.Shell.info("Please use a license recognized by SPDX")
-      :error
-    end
 
     {tarball, checksum} = Hex.create_tar!(meta, meta.files, :memory)
     dry_run? = Keyword.get(opts, :dry_run, false)
