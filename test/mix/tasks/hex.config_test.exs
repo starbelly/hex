@@ -8,7 +8,6 @@ defmodule Mix.Tasks.Hex.ConfigTest do
       Mix.Tasks.Hex.Config.run([])
 
       assert_received {:mix_shell, :info, ["api_url:" <> _]}
-      assert_received {:mix_shell, :info, ["api_key: nil (default)"]}
       assert_received {:mix_shell, :info, ["offline: false (default)"]}
       assert_received {:mix_shell, :info, ["unsafe_https: false (default)"]}
       assert_received {:mix_shell, :info, ["unsafe_registry: false (default)"]}
